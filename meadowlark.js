@@ -18,6 +18,12 @@ app.get('/', function (req, res) {
     res.render('home');
 });
 
+// 测试
+app.use(function (req, res, next) {
+    res.locals.showTests = app.get('env') !== 'production' && req.query.test === '1';
+    next();
+});
+
 app.get('/about', function (req, res) {
     res.render('about', {fortune: fortune.getFortune()});
 });
