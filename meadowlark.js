@@ -36,6 +36,14 @@ app.get('/tours/request-group-rate', function (req, res) {
     res.render('tours/request-group-rate');
 });
 
+app.get('/headers', function (req, res) {
+    res.set('Content-type', 'text/plain');
+    let s = '';
+    for (let name in req.headers) s += `${name}: ${req.headers[name]}`
+    res.send(s);
+
+});
+
 // 定制404页面
 app.use(function (req, res) {
     res.status(400);
