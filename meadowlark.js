@@ -1,10 +1,19 @@
 let express = require('express');
 let fortune = require('./lib/fortune');
 let app = express();
+let formidable = require('formidable')
+let credentials = require('./credentials');
 let tours = [
     {id: 0, name: 'Hood River', price: 99.99},
     {id: 1, name: 'Oregon Coast', price: 149.95}
 ];
+
+app.use(require('cookie-parser')(credentials.cookieSecret));
+app.use(require('express-session')({
+    secret: credentials.cookieSecret,
+    resave: false,
+    saveUninitialized: true
+}));
 // 引入body-parser
 // app.use(require('body-parser')());
 app.use(require('body-parser').urlencoded({
@@ -74,10 +83,35 @@ app.use(function (req, res, next) {
 
 // 设置路由
 app.get('/', function (req, res) {
+    req.session.userName = 'Anonymous';
     res.render('home');
+    console.log(req.session.userName);
+});
+
+app.get('/session-test', function (req, res) {
+    let userName = req.session.userName;
+    if (userName) {
+        res.send(`userName: ${userName}`)
+    } else {
+        res.send('no session info');
+    }
+
 });
 
 app.get('/about', function (req, res) {
+    res.clearCookie('monster');
+    let monster = req.cookies.monster;
+    let signedMonster = req.signedCookies.signed_monster;
+    if (monster) {
+        console.log(`monster: ${monster}`);
+    } else {
+        res.cookie('monster', 'nom nom');
+    }
+    if (signedMonster) {
+        console.log(`signed_monster: ${signedMonster}`);
+    } else {
+        res.cookie('signed_monster', 'nom nom', {signed: true});
+    }
     res.render('about', {fortune: fortune.getFortune(), pageTestScript: '/qa/tests-about.js'});
 });
 
@@ -186,6 +220,27 @@ app.get('/thank-you', function (req, res) {
 app.get('/jquery-test', function (req, res) {
     res.render('jquery-test');
 });
+
+app.get('/contest/vacation-photo', function (req, res) {
+    let now = new Date();
+    res.render('contest/vacation-photo', {
+        year: now.getFullYear(),
+        month: now.getMonth()
+    })
+});
+
+app.post('/contest/vacation-photo/:year/:month', function (req, res) {
+    let form = new formidable.IncomingForm();
+    form.parse(req, function (err, fields, files) {
+        if (err) return res.redirect(303, '/error');
+        console.log('received fields: ');
+        console.log(fields);
+        console.log('received files: ');
+        console.log(files);
+        res.redirect(303, '/thank-you');
+    })
+});
+
 // 定制404页面
 app.use(function (req, res) {
     res.status(400);
