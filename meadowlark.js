@@ -3,11 +3,68 @@ let fortune = require('./lib/fortune');
 let app = express();
 let formidable = require('formidable')
 let credentials = require('./credentials');
+let mongoose = require('mongoose');
+let opts = {
+    server: {
+        socketOptions: {keepAlive: 1}
+    }
+};
+let server;
 let tours = [
     {id: 0, name: 'Hood River', price: 99.99},
     {id: 1, name: 'Oregon Coast', price: 149.95}
 ];
 
+switch (app.get('env')) {
+    case 'development':
+        mongoose.connect(credentials.mongo.development.connectionString, opts);
+        break;
+    case 'production':
+        mongoose.connect(credentials.mongo.production.connectionString, opts);
+        break;
+    default:
+        throw new Error(`Unknown execution environment: ${app.get('env')}`);
+}
+/***exception-handler**/
+app.use(function (req, res, next) {
+    // 为这个请求创建一个域
+    let domain = require('domain').create();
+    domain.on('error', function (err) {
+        console.error('DOMAIN ERROR CAUGHT\n', err.stack);
+        try {
+            // 在5秒内进行故障保护关机
+            setTimeout(function () {
+                console.error('Fail safe shutdown.');
+                process.exit(1);
+            }, 5000);
+            // 从集群中断开
+            let worker = require('cluster').workers;
+            console.log(typeof worker);
+            if (worker && Object.keys(worker).length !== 0) worker.disconnect();
+
+            // 停止接收新请求
+            server.close();
+
+            try {
+                // 尝试使用Express错误路由
+                next(err);
+            } catch (err) {
+                // 若果Express 错误路由失效，尝试返回普通文本响应
+                console.error('Express error mechanism failed.\n', err.stack);
+                res.statusCode = 500;
+                res.setHeader('content-type', 'text/plain');
+                res.end('Server error.');
+            }
+        } catch (err) {
+            console.error('Unable to send 500 response.\n', err.stack);
+        }
+    });
+    // 向域中添加请求和响应对象
+    domain.add(req);
+    domain.add(res);
+    //执行该域中剩余的请求链
+    domain.run(next);
+});
 app.use(require('cookie-parser')(credentials.cookieSecret));
 app.use(require('express-session')({
     secret: credentials.cookieSecret,
@@ -120,6 +177,9 @@ app.use(function (req, res, next) {
     res.locals.partials.weatherContext = getWeatherData();
     next();
 });
+
+
+/*********exception-handler-end*****************/
 /**
  * exception-test
  */
@@ -307,7 +367,7 @@ app.use(function (err, req, res, next) {
 });
 
 function startServer() {
-    app.listen(app.get('port'), function () {
+    server = app.listen(app.get('port'), function () {
         console.log(`Express started in ${app.get('env')} on http://localhost: ${app.get('port')};  press Ctrl-C to terminate.`)
     });
 }
