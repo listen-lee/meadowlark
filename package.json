@@ -14,11 +14,13 @@
     "express": "^4.16.4",
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.6",
-    "formidable": "^1.2.1"
+    "formidable": "^1.2.1",
+    "express-logger": "0.0.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
+    "morgan": "^1.9.1",
     "zombie": "^6.1.3"
   }
 }
