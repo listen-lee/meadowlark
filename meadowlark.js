@@ -3,6 +3,7 @@ const http = require('http'),
     fortune = require('./lib/fortune'),
     morgan = require('morgan'),
     formidable = require('formidable'),
+    bodyParser = require('body-parser'),
     fs = require('fs'),
     Vacation = require('./models/vacation'),
     VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
@@ -15,10 +16,10 @@ const emailService = require('./lib/email');
 //set up handlebars view engine
 
 const handlebars = require('express-handlebars').create({
-    defaultLayout: 'main',
+    defaultLayout:'main',
     helpers: {
-        section: function (name, options) {
-            if (this._sections) this._sections = {};
+        section: function(name, options){
+            if(!this._sections) this._sections = {};
             this._sections[name] = options.fn(this);
             return null;
         }
@@ -110,29 +111,28 @@ app.use(session({
     saveUninitialized: true
 }));
 app.use(require('cookie-parser')(credentials.cookieSecret));
-app.use(require('express-session')({
-    resave: false,
-    saveUninitialized: false,
-    secret: credentials.cookieSecret,
-    store: sessionStore,
-}));
 
+app.use(express.static(__dirname + '/public'));
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+app.use(bodyParser.json())
 
 // database configuration
 switch (app.get('env')) {
     case 'development':
-        mongoose.connect(credentials.mongo.development.connectionString, opts);
+        mongoose.connect(credentials.mongo.development.connectionString, options);
         break;
     case 'production':
-        mongoose.connect(credentials.mongo.production.connectionString, opts);
+        mongoose.connect(credentials.mongo.production.connectionString, options);
         break;
     default:
         throw new Error(`Unknown execution environment: ${app.get('env')}`);
 }
 
 // initialize vacations
-Vacation.find(function(err, vacations){
-    if(vacations.length) return;
+Vacation.find(function (err, vacations) {
+    if (vacations.length) return;
 
     new Vacation({
         name: 'Hood River Day Trip',
@@ -190,13 +190,14 @@ app.use(function (req, res, next) {
 });
 
 // set 'showTests' context property if the querystring contains test=1
-app.use(function(req, res, next){
+app.use(function (req, res, next) {
     res.locals.showTests = app.get('env') !== 'production' &&
         req.query.test === '1';
     next();
 });
+
 // mocked weather data
-function getWeatherData(){
+function getWeatherData() {
     return {
         locations: [
             {
@@ -225,8 +226,8 @@ function getWeatherData(){
 }
 
 // middleware to add weather data to context
-app.use(function(req, res, next){
-    if(!res.locals.partials) res.locals.partials = {};
+app.use(function (req, res, next) {
+    if (!res.locals.partials) res.locals.partials = {};
     res.locals.partials.weatherContext = getWeatherData();
     next();
 });
@@ -237,10 +238,10 @@ const admin = express.Router();
 app.use(require('vhost')('admin.*', admin));
 
 // create admin routes; these can be defined anywhere
-admin.get('/', function(req, res){
+admin.get('/', function (req, res) {
     res.render('admin/home');
 });
-admin.get('/users', function(req, res){
+admin.get('/users', function (req, res) {
     res.render('admin/users');
 });
 
@@ -250,13 +251,13 @@ require('./routes.js')(app);
 // add support for auto views
 const autoViews = {};
 
-app.use(function(req,res,next){
+app.use(function (req, res, next) {
     var path = req.path.toLowerCase();
     // check cache; if it's there, render the view
-    if(autoViews[path]) return res.render(autoViews[path]);
+    if (autoViews[path]) return res.render(autoViews[path]);
     // if it's not in the cache, see if there's
     // a .handlebars file that matches
-    if(fs.existsSync(__dirname + '/views' + path + '.handlebars')){
+    if (fs.existsSync(__dirname + '/views' + path + '.handlebars')) {
         autoViews[path] = path.replace(/^\//, '');
         return res.render(autoViews[path]);
     }
@@ -264,27 +265,28 @@ app.use(function(req,res,next){
     next();
 });
 // 404 catch-all handler (middleware)
-app.use(function(req, res, next){
+app.use(function (req, res, next) {
     res.status(404);
     res.render('404');
 });
 
 // 500 error handler (middleware)
-app.use(function(err, req, res, next){
+app.use(function (err, req, res, next) {
     console.error(err.stack);
     res.status(500);
     res.render('500');
 });
 let server;
+
 function startServer() {
-    server = http.createServer(app).listen(app.get('port'), function(){
-        console.log( 'Express started in ' + app.get('env') +
+    server = http.createServer(app).listen(app.get('port'), function () {
+        console.log('Express started in ' + app.get('env') +
             ' mode on http://localhost:' + app.get('port') +
-            '; press Ctrl-C to terminate.' );
+            '; press Ctrl-C to terminate.');
     });
 }
 
-if(require.main === module){
+if (require.main === module) {
     // application run directly; start app server
     startServer();
 } else {

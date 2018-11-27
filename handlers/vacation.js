@@ -24,10 +24,11 @@ exports.detail = function (req, res, next) {
 
 exports.list = function (req, res) {
     Vacation.find({available: true}, function (err, vacations) {
+        console.log('==================\n', vacations);
         let currency = req.session.currency || 'USD';
         let context = {
             currency: currency,
-            vacation: vacations.map(function (vacation) {
+            vacations: vacations.map(function (vacation) {
                 return {
                     sku: vacation.sku,
                     name: vacation.name,
