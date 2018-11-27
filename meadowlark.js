@@ -16,16 +16,17 @@ const emailService = require('./lib/email');
 //set up handlebars view engine
 
 const handlebars = require('express-handlebars').create({
-    defaultLayout:'main',
+    defaultLayout: 'main',
     helpers: {
-        section: function(name, options){
-            if(!this._sections) this._sections = {};
+        section: function (name, options) {
+            if (!this._sections) this._sections = {};
             this._sections[name] = options.fn(this);
             return null;
         }
     }
 });
 
+app.use('/api', require('cors')());
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
@@ -96,7 +97,7 @@ switch (app.get('env')) {
         break;
 }
 
-const mongoose = require('mongoose');
+const mongoose = require('mongoose').set('debug', true);
 const options = {
     keepAlive: 1,
     useNewUrlParser: true
