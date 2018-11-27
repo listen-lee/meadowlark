@@ -6,3 +6,4 @@ node_modules
 package-lock.json
 credentials.js
 log
+views/partials/
