@@ -5,7 +5,8 @@ const http = require('http'),
     formidable = require('formidable'),
     bodyParser = require('body-parser'),
     fs = require('fs'),
-    Vacation = require('./models/vacation'),
+    Rest = require('connect-rest');
+Vacation = require('./models/vacation'),
     VacationInSeasonListener = require('./models/vacationInSeasonListener.js');
 
 const app = express();
@@ -265,6 +266,23 @@ app.use(function (req, res, next) {
     // no view found; pass on to 404 handler
     next();
 });
+//api 配置
+let apiOptions = {
+    context: '/api',
+    domain: require('domain').create()
+};
+let rest = Rest.create(apiOptions);
+//将api 连入管道
+app.use(rest.processRequest());
+
+const api = require('./handlers/api');
+//api
+rest.get('/attractions', api.restGetAttraction, { contentType:'application/json' });
+rest.post('/attraction', api.restPostAttraction, { contentType:'application/json' });
+rest.get('/attraction/:id', api.restGetAttractionById, { contentType:'application/json' });
+
+
+
 // 404 catch-all handler (middleware)
 app.use(function (req, res, next) {
     res.status(404);

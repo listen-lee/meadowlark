@@ -51,8 +51,8 @@ module.exports = function (app) {
     app.get('/epic-fail', samples.epicFail);
 
     // api
-    app.get('/api/attractions', api.getAttraction);
-    app.post('/api/attraction', api.postAttraction);
-    app.get('/api/attraction/:id', api.getAttractionById);
+    // app.get('/api/attractions', api.getAttraction);
+    // app.post('/api/attraction', api.postAttraction);
+    // app.get('/api/attraction/:id', api.getAttractionById);
 
 };
