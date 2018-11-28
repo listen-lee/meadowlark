@@ -23,6 +23,9 @@ const handlebars = require('express-handlebars').create({
             if (!this._sections) this._sections = {};
             this._sections[name] = options.fn(this);
             return null;
+        },
+        static: function (name) {
+            return require('./lib/static').map(name);
         }
     }
 });
@@ -277,10 +280,9 @@ app.use(rest.processRequest());
 
 const api = require('./handlers/api');
 //api
-rest.get('/attractions', api.restGetAttraction, { contentType:'application/json' });
-rest.post('/attraction', api.restPostAttraction, { contentType:'application/json' });
-rest.get('/attraction/:id', api.restGetAttractionById, { contentType:'application/json' });
-
+rest.get('/attractions', api.restGetAttraction, {contentType: 'application/json'});
+rest.post('/attraction', api.restPostAttraction, {contentType: 'application/json'});
+rest.get('/attraction/:id', api.restGetAttractionById, {contentType: 'application/json'});
 
 
 // 404 catch-all handler (middleware)
